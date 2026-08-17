@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'"
+  />
+  <title>设置 — DeepSeek Harness</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0d1117;
+      color: #e6edf3;
+      font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+      padding: 20px 22px;
+      font-size: 13px;
+      user-select: none;
+    }
+    h1 { font-size: 16px; font-weight: 600; margin-bottom: 18px; }
+    .row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 0; border-bottom: 1px solid #21262d;
+      gap: 16px;
+    }
+    .row .hint { color: #8b949e; font-size: 11px; margin-top: 3px; }
+    input[type="checkbox"] { width: 16px; height: 16px; accent-color: #2563eb; flex-shrink: 0; }
+    input[type="number"] {
+      width: 90px; padding: 4px 8px; border-radius: 6px;
+      border: 1px solid #30363d; background: #161b22; color: #e6edf3;
+      font-size: 13px;
+    }
+    .saved {
+      text-align: right; color: #3fb950; font-size: 11px;
+      height: 16px; margin-top: 8px; opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .saved.show { opacity: 1; }
+    .status {
+      margin-top: 14px; padding: 10px 12px;
+      background: #161b22; border: 1px solid #21262d; border-radius: 8px;
+      color: #8b949e; font-size: 12px; line-height: 1.9;
+    }
+    .status b { color: #e6edf3; font-weight: 500; }
+  </style>
+</head>
+<body>
+  <h1>设置</h1>
+
+  <div class="row">
+    <div>
+      复用已运行的实例
+      <div class="hint">检测到 127.0.0.1:3080 已有 DSH 时直接连接</div>
+    </div>
+    <input type="checkbox" id="reuseExisting" />
+  </div>
+
+  <div class="row">
+    <div>
+      关闭窗口时最小化到托盘
+      <div class="hint">后台继续运行，退出请用托盘菜单</div>
+    </div>
+    <input type="checkbox" id="closeToTray" />
+  </div>
+
+  <div class="row">
+    <div>
+      开机自启
+      <div class="hint">登录 Windows 后自动启动客户端</div>
+    </div>
+    <input type="checkbox" id="autoLaunch" />
+  </div>
+
+  <div class="row">
+    <div>
+      系统通知
+      <div class="hint">后端就绪 / 崩溃重启 / 有新版本时通知</div>
+    </div>
+    <input type="checkbox" id="notifications" />
+  </div>
+
+  <div class="row">
+    <div>
+      自起后端起始端口
+      <div class="hint">向后探测 40 个端口找空闲</div>
+    </div>
+    <input type="number" id="portStart" min="1024" max="65535" />
+  </div>
+
+  <div class="saved" id="saved">已保存</div>
+
+  <div class="status">
+    <div>后端：<b id="backendState">…</b></div>
+    <div>DSH 内核：<b id="dshVersion">…</b></div>
+    <div id="updateLine"></div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    async function loadAll() {
+      const s = await window.desktop.getSettings();
+      $('reuseExisting').checked = !!s.reuseExisting;
+      $('closeToTray').checked = s.closeBehavior !== 'quit';
+      $('autoLaunch').checked = !!s.autoLaunch;
+      $('notifications').checked = !!s.notifications;
+      $('portStart').value = s.portStart;
+
+      const st = await window.desktop.getStatus();
+      $('backendState').textContent = st.backendUrl
+        ? (st.backendReady ? '运行中 ' + st.backendUrl : '启动中 ' + st.backendUrl)
+        : '未启动';
+      const local = st.localDshVersion || '未知';
+      $('dshVersion').textContent = local;
+      if (st.dshVersionChecked && st.latestDshVersion && st.latestDshVersion !== local) {
+        $('updateLine').textContent =
+          '有新版本可用：' + local + ' → ' + st.latestDshVersion + '（更新 dsh 内核需重新打包或壳核分离）';
+        $('updateLine').style.color = '#d29922';
+      }
+    }
+
+    let savedTimer = null;
+    function flashSaved() {
+      const el = $('saved');
+      el.classList.add('show');
+      clearTimeout(savedTimer);
+      savedTimer = setTimeout(() => el.classList.remove('show'), 1200);
+    }
+
+    function bind() {
+      const save = () => {
+        window.desktop.setSettings({
+          reuseExisting: $('reuseExisting').checked,
+          closeBehavior: $('closeToTray').checked ? 'tray' : 'quit',
+          autoLaunch: $('autoLaunch').checked,
+          notifications: $('notifications').checked,
+          portStart: Math.max(1024, Math.min(65535, parseInt($('portStart').value, 10) || 3080)),
+        }).then(flashSaved);
+      };
+      ['reuseExisting', 'closeToTray', 'autoLaunch', 'notifications'].forEach((id) => {
+        document.getElementById(id).addEventListener('change', save);
+      });
+      $('portStart').addEventListener('change', save);
+    }
+
+    window.desktop.onVersion((v) => {
+      if (v && v.latest && v.latest !== v.local) {
+        $('updateLine').textContent =
+          '有新版本可用：' + v.local + ' → ' + v.latest + '（更新 dsh 内核需重新打包或壳核分离）';
+        $('updateLine').style.color = '#d29922';
+      }
+    });
+
+    loadAll().then(bind);
+  </script>
+</body>
+</html>

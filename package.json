@@ -1,0 +1,82 @@
+{
+  "name": "dsh-desktop",
+  "productName": "DeepSeek Harness",
+  "version": "0.2.0",
+  "private": true,
+  "author": "dsh-desktop contributors",
+  "description": "DeepSeek Harness 桌面客户端：内嵌启动 DSH 后端，原生窗口 + 托盘常驻 + 崩溃自动重启，无需浏览器",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "node scripts/pack.js",
+    "dist": "electron-builder --win nsis"
+  },
+  "dependencies": {
+    "@deepseek-ai/dsh": "^0.1.0-rc.6",
+    "@deepseek-ai/cordis-plugin-group": "^1.0.1",
+    "@deepseek-ai/dsh-anonymous-user-id": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-atomic-write": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-bash-local": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-code-runtime": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-compaction": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-fs": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-invariants": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-output-retention": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-sandbox": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-scope": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-session-telemetry": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-session-title-llm": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-shell": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-spill": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-subagent-in-process-driver": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-subprocess": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-timeout": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-workflow": "^0.1.0-rc.6"
+  },
+  "devDependencies": {
+    "electron": "^43.4.0",
+    "electron-builder": "^26.15.3"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "build": {
+    "appId": "com.dsh.desktop",
+    "productName": "DeepSeek Harness",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "node_modules/**/*",
+      "!node_modules/electron/**",
+      "!node_modules/.bin/**",
+      "!node_modules/electron-builder/**",
+      "!node_modules/app-builder-*/**",
+      "!node_modules/builder-util*/**",
+      "!node_modules/dmg-builder/**",
+      "!node_modules/electron-publish/**",
+      "!node_modules/electron-winstaller/**",
+      "!node_modules/electron-builder-squirrel-windows/**"
+    ],
+    "asar": false,
+    "npmRebuild": false,
+    "electronDist": "node_modules/electron/dist",
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "assets/icon.ico",
+      "artifactName": "DeepSeek Harness Setup ${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "DeepSeek Harness",
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}
